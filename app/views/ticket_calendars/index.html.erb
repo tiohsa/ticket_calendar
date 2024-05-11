@@ -1,0 +1,120 @@
+<h2>Ticket Calendar</h2>
+
+<select id="view-selector">
+  <option value="multiMonthYear">Multi Month Year</option>
+  <option value="timeGridWeek">Time Grid Week</option>
+  <option value="listDay">List Day</option>
+  <option value="listWeek">List Week</option>
+  <option value="listMonth">List Month</option>
+  <option value="listYear">List Year</option>
+  <option value="dayGridMonth">Day Grid Month</option>
+  <option value="dayGridWeek">Day Grid Week</option>
+  <option value="dayGridDay">Day Grid Day</option>
+</select>
+
+<div id='calendar'></div>
+
+
+<style>
+/* 土曜日の色を青に設定 */
+.fc-day-sat {
+    background-color: #CCF;
+}
+
+/* 日曜日の色を赤に設定 */
+.fc-day-sun {
+    background-color: #FCC;
+}
+/* カレンダーセルにホバーした際にカーソルをカスタムカーソルに変更 */
+.fc-daygrid-day:hover {
+    cursor: alias;
+}
+</style>
+
+<%= javascript_include_tag 'index.global.min.js', plugin: :ticket_calendar %>
+
+<script type="importmap">
+  {
+    "imports": {
+      "timeGrid": "<%= asset_path('/plugin_assets/ticket_calendar/javascripts/packages/timegrid/index.global.min.js') %>",
+      "list": "<%= asset_path('/plugin_assets/ticket_calendar/javascripts/packages/list/index.global.min.js') %>",
+      "dayGrid": "<%= asset_path('/plugin_assets/ticket_calendar/javascripts/packages/daygrid/index.global.min.js') %>",
+      "multiMonth": "<%= asset_path('/plugin_assets/ticket_calendar/javascripts/packages/multimonth/index.global.min.js') %>"
+    }
+  }
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var projectId = "<%= @project.id %>";
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'multiMonthYear',
+      timeZone: 'local',
+      firstDay: 1,
+      events: function(fetchInfo, successCallback, failureCallback) {
+        fetch(`/projects/${projectId}/ticket_calendars?start=${fetchInfo.start.toLocaleDateString()}&end=${fetchInfo.end.toLocaleDateString()}`, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        })
+          .then(response => response.json())
+          .then(events => successCallback(events))
+          .catch(error => failureCallback(error));
+      },
+      editable: true,  // カレンダー上でイベントの編集を許可
+      eventDrop: function(info) {
+        updateTicketDatesHandler(projectId, info);
+      },
+      eventResizableFromStart: true,  // イベントの開始日もリサイズ可能に
+      eventResize: function(info) {
+        updateTicketDatesHandler(projectId, info);
+      },
+      eventClick: function(info) {
+        info.jsEvent.preventDefault(); // FullCalendarのデフォルトのクリック動作を停止
+        if (info.event.url) {
+            window.open(info.event.url, '_blank'); // 新しいタブでURLを開く
+        }
+      },
+      dateClick: function(info) {
+        var ticketUrl = `/projects/${projectId}/issues/new`;
+        ticketUrl += '?issue[start_date]=' + info.dateStr;  // 日付をstart_dateパラメータにセット
+        window.open(ticketUrl, '_blank');
+      }
+      // その他のカレンダー設定
+    });
+    calendar.render();
+    var viewSelector = document.getElementById('view-selector');
+    viewSelector.addEventListener('change', function() {
+      calendar.changeView(this.value);
+    });
+  });
+
+  function updateTicketDatesHandler(projectId, info) {
+      var ticketId = info.event.id;
+      var newStartDate = info.event.start;
+      var newEndDate = info.event.end ? info.event.end : newStartDate; // 終日イベントの場合、終了日は省略されることがある
+
+      updateTicketDates(projectId, ticketId, newStartDate, newEndDate);
+  }
+
+  function addDay(date, days) {
+    return new Date(date.getTime() + (1000 * 60 * 60 * 24) * days);
+  }
+
+  function updateTicketDates(projectId, ticketId, startDate, endDate) {
+    fetch(`/projects/${projectId}/ticket_calendars/${ticketId}/update_dates`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ start_date: startDate.toLocaleDateString(), end_date: endDate.toLocaleDateString()  })
+    }).then(response => {
+      if (!response.ok) {
+        alert('Failed to update ticket dates.');
+      }
+    });
+  }
+
+</script>
