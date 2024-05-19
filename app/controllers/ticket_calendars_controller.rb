@@ -1,7 +1,7 @@
 require 'date'
 
 class TicketCalendarsController < ApplicationController
-  # unloadable
+  unloadable
   before_action :find_project, :authorize
   before_action :find_ticket, only: [:update_dates]
 
@@ -37,6 +37,24 @@ class TicketCalendarsController < ApplicationController
     # fullcalendarから受ける日付は一日増やしたので戻す
     @ticket.start_date = start_date
     @ticket.due_date = end_date <= start_date ?  start_date  : end_date - 1
+
+    if @ticket.save
+      render json: { status: 'ok' }
+    else
+      render json: { status: 'error', message: @ticket.errors.full_messages.join(', ') }, status: :unprocessable_entity
+    end
+  end
+
+  def update_done_ratio
+    @ticket = Issue.find(params[:id])
+    done_ratio = Date.parse(params[:done_ratio]) rescue nil
+
+    if done_ratio.nil?
+      render json: { status: 'error', message: 'Done Ratio is not a valid date' }, status: :unprocessable_entity
+      return
+    end
+
+    @ticket.done_ratio = done_ratio
 
     if @ticket.save
       render json: { status: 'ok' }

@@ -6,6 +6,7 @@ Rails.application.routes.draw do
     resources :ticket_calendars, only: [:index] do
       member do
         put :update_dates
+        put :update_done_ratio
       end
     end
   end

@@ -6,9 +6,6 @@ Redmine::Plugin.register :ticket_calendar do
   url 'http://example.com/path/to/plugin'
   author_url 'http://example.com/about'
 
-  permission :view_ticket_calendar, { ticket_calendars: [:index, :update_dates, :update_end_date] }, public: true
+  permission :view_ticket_calendar, { ticket_calendars: [:index, :update_dates, :update_done_ratio] }, public: true
   menu :project_menu, :ticket_calendar, { controller: 'ticket_calendars', action: 'index' }, caption: 'Calendar', after: :activity, param: :project_id
-
-  # permission :view_ticket_calendars, { ticket_calendars: [:index, :update_dates] }
-  # menu :project_menu, :ticket_calendars, { controller: 'ticket_calendars', action: 'index' }, caption: 'Calendar'
 end
