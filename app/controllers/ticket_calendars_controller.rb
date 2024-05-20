@@ -6,9 +6,11 @@ class TicketCalendarsController < ApplicationController
   before_action :find_ticket, only: [:update_dates]
 
   def index
+    statuses = IssueStatus.all
+    default_statuses = statuses.where.not(name: ['Closed', 'Resolved']).pluck(:id)
     start_date = params[:start] ? params[:start] : Date.today.beginning_of_month - 7
     end_date = params[:end] ? params[:end] : Date.today.end_of_month + 7
-    @tickets = @project.issues.where("(start_date >= ? AND due_date <= ?) OR (start_date IS NOT NULL AND due_date IS NULL)", start_date, end_date)
+    @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?)", start_date, end_date, default_statuses).order(:start_date)
     respond_to do |format|
       format.html
       format.json { render json: @tickets.map { |ticket| ticket_to_calendar_json(ticket) } }

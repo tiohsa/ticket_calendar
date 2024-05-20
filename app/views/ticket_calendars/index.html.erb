@@ -144,11 +144,11 @@
       eventResize: function(info) {
         updateTicketDatesHandler(project_id, info);
       },
-      eventClick: function(info) {
-       info.jsEvent.preventDefault(); // デフォルトのイベント動作を防ぐ
-      //  openEditTicketModal(project_id, info); // モーダルを開く関数を呼び出す
-       openContextMenu(project_id, info, this);
-      },
+      // eventClick: function(info) {
+      //  info.jsEvent.preventDefault(); // デフォルトのイベント動作を防ぐ
+      // //  openEditTicketModal(project_id, info); // モーダルを開く関数を呼び出す
+      //  openContextMenu(project_id, info, this);
+      // },
       dateClick: function(info) {
         openNewTicketModal(project_id, info, this); // モーダルを開く関数を呼び出す
       }
