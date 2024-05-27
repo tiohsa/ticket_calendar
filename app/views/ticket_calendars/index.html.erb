@@ -1,15 +1,23 @@
-<h2>Ticket Calendar</h2>
-<select id="view-selector">
-  <option value="multiMonthYear">Multi Month Year</option>
-  <option value="timeGridWeek">Time Grid Week</option>
-  <option value="listDay">List Day</option>
-  <option value="listWeek">List Week</option>
-  <option value="listMonth">List Month</option>
-  <option value="listYear">List Year</option>
-  <option value="dayGridMonth">Day Grid Month</option>
-  <option value="dayGridWeek">Day Grid Week</option>
-  <option value="dayGridDay">Day Grid Day</option>
-</select>
+<div style="display: flex; flex-wrap: wrap; align-items: center;">
+  <select id="view-selector">
+    <option value="multiMonthYear">Multi Month Year</option>
+    <option value="timeGridWeek">Time Grid Week</option>
+    <option value="listDay">List Day</option>
+    <option value="listWeek">List Week</option>
+    <option value="listMonth">List Month</option>
+    <option value="listYear">List Year</option>
+    <option value="dayGridMonth">Day Grid Month</option>
+    <option value="dayGridWeek">Day Grid Week</option>
+    <option value="dayGridDay">Day Grid Day</option>
+  </select>
+  status
+  <% IssueStatus.all.each do |status| %>
+    <div style="margin-right: 10px;">
+      <%= check_box_tag 'status_ids[]', status.id, (params[:status_ids] || IssueStatus.where(is_closed: false).pluck(:id)).include?(status.id), id: "status_ids_#{status.id}", class: 'status-checkbox' %>
+      <%= label_tag "status_ids_#{status.id}", status.name, class: "status_ids" %>
+    </div>
+  <% end %>
+</div>
 <!-- モーダルダイアログのHTML -->
 <div id="ticketModal" class="modal" style="display:none;">
   <div class="modal-content">
@@ -120,163 +128,162 @@
 </script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    var project_id = "<%= @project.id %>";
-    var calendarEl = document.getElementById('calendar');
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'multiMonthYear',
-      timeZone: 'local',
-      firstDay: 1,
-      events: function(fetchInfo, successCallback, failureCallback) {
-        fetch(`/projects/${project_id}/ticket_calendars?start=${fetchInfo.start.toLocaleDateString()}&end=${fetchInfo.end.toLocaleDateString()}`, {
-          headers: {
-            'Accept': 'application/json'
-          }
-        })
-          .then(response => response.json())
-          .then(events => successCallback(events))
-          .catch(error => failureCallback(error));
-      },
-      editable: true,  // カレンダー上でイベントの編集を許可
-      eventDrop: function(info) {
-        updateTicketDatesHandler(project_id, info);
-      },
-      eventResizableFromStart: true,  // イベントの開始日もリサイズ可能に
-      eventResize: function(info) {
-        updateTicketDatesHandler(project_id, info);
-      },
-      // eventClick: function(info) {
-      //  info.jsEvent.preventDefault(); // デフォルトのイベント動作を防ぐ
-      // //  openEditTicketModal(project_id, info); // モーダルを開く関数を呼び出す
-      //  openContextMenu(project_id, info, this);
-      // },
-      dateClick: function(info) {
-        openNewTicketModal(project_id, info, this); // モーダルを開く関数を呼び出す
+  var project_id = "<%= @project.id %>";
+  var calendarEl = document.getElementById('calendar');
+
+  function fetchEvents(fetchInfo, successCallback, failureCallback) {
+    var selectedStatusIds = Array.from(document.querySelectorAll('.status-checkbox:checked')).map(cb => `status_ids[]=${cb.value}`).join('&');
+
+    fetch(`/projects/${project_id}/ticket_calendars?start=${fetchInfo.start.toLocaleDateString()}&end=${fetchInfo.end.toLocaleDateString()}&${selectedStatusIds}`, {
+      headers: {
+        'Accept': 'application/json'
       }
+    })
+      .then(response => response.json())
+      .then(events => successCallback(events))
+      .catch(error => failureCallback(error));
+  }
+
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'multiMonthYear',
+    timeZone: 'local',
+    firstDay: 1,
+    events: fetchEvents,
+    editable: true,
+    eventDrop: function(info) {
+      updateTicketDatesHandler(project_id, info);
+    },
+    eventResizableFromStart: true,
+    eventResize: function(info) {
+      updateTicketDatesHandler(project_id, info);
+    },
+    dateClick: function(info) {
+      openNewTicketModal(project_id, info, this);
+    }
+  });
+
+  calendar.render();
+
+  document.querySelectorAll('.status-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+      calendar.refetchEvents();
     });
-    calendar.render();
-    var viewSelector = document.getElementById('view-selector');
-    viewSelector.addEventListener('change', function() {
-      calendar.changeView(this.value);
-    });
+  });
   });
 
   function openContextMenu(project_id, info, calendar) {
-    var ticket_id = info.event.id;
-    info.jsEvent.preventDefault(); // ブラウザのデフォルトのイベントを停止
-    info.jsEvent.stopPropagation(); // イベントのバブリングを停止
-    // コンテキストメニューを表示
-    var contextMenu = document.getElementById('contextMenu');
-    contextMenu.style.display = 'block';
-    contextMenu.style.left = info.jsEvent.pageX + 'px';
-    contextMenu.style.top = info.jsEvent.pageY + 'px';
-    // 編集
-    document.getElementById('edit-ticket').addEventListener('click', function(event) {
+  var ticket_id = info.event.id;
+  info.jsEvent.preventDefault();
+  info.jsEvent.stopPropagation();
+
+  var contextMenu = document.getElementById('contextMenu');
+  contextMenu.style.display = 'block';
+  contextMenu.style.left = info.jsEvent.pageX + 'px';
+  contextMenu.style.top = info.jsEvent.pageY + 'px';
+
+  document.getElementById('edit-ticket').addEventListener('click', function(event) {
+    document.getElementById('contextMenu').style.display = 'none';
+    openEditTicketModal(project_id, info, calendar);
+  });
+
+  document.getElementById('progress-menu-item').addEventListener('click', function(event) {
+    event.preventDefault();
+  });
+
+  document.addEventListener('click', function(event) {
+    if (!event.target.closest('#contextMenu')) {
       document.getElementById('contextMenu').style.display = 'none';
-      openEditTicketModal(project_id, info, calendar);
-    });
-    // 進捗率
-    document.getElementById('progress-menu-item').addEventListener('click', function(event) {
-      event.preventDefault();
-    });
-    // 閉じる
-    document.addEventListener('click', function(event) {
-      if (!event.target.closest('#contextMenu')) {
-        document.getElementById('contextMenu').style.display = 'none';
-      }
-    });
+    }
+  });
   }
 
   function openNewTicketModal(project_id, info, calendar) {
-    console.log(calendar)
-    var url  = '/issues/new?issue[start_date]=' + info.dateStr;  // 日付をstart_dateパラメータにセット
-    openTicketModal(project_id, info, url, calendar);
+  var url = '/issues/new?issue[start_date]=' + info.dateStr;
+  openTicketModal(project_id, info, url, calendar);
   }
 
   function openEditTicketModal(project_id, info, calendar) {
-    var ticket_id = info.event.id;
-    var url =`/issues/${ticket_id}/edit`; // iframeにチケット編集ページのURLを設定
-    openTicketModal(project_id, info, url, calendar);
+  var ticket_id = info.event.id;
+  var url = `/issues/${ticket_id}/edit`;
+  openTicketModal(project_id, info, url, calendar);
   }
 
   function openTicketModal(project_id, info, url, calendar) {
-    var modal = document.getElementById('ticketModal');
-    var iframe = document.getElementById('ticketIframe');
-    var closeBtn = document.querySelector('.close');
+  var modal = document.getElementById('ticketModal');
+  var iframe = document.getElementById('ticketIframe');
+  var closeBtn = document.querySelector('.close');
 
-    iframe.src = url;
-    modal.style.display = 'block'; // モーダルを表示
+  iframe.src = url;
+  modal.style.display = 'block';
 
-   // iframe内のメニュー部分を非表示にする
-    iframe.onload = function() {
-      const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-      const menu = iframeDocument.getElementById('top-menu'); // メニューのID
-      if (menu) {
-        menu.style.display = 'none';
-      }
-      const header = iframeDocument.getElementById('header'); // メニューのID
-      if (header) {
-        header.style.display = 'none';
-      }
-      const footer = iframeDocument.getElementById('footer'); // メニューのID
-      if (footer) {
-        footer.style.display = 'none';
-      }
-    };
+  iframe.onload = function() {
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+    const menu = iframeDocument.getElementById('top-menu');
+    if (menu) {
+      menu.style.display = 'none';
+    }
+    const header = iframeDocument.getElementById('header');
+    if (header) {
+      header.style.display = 'none';
+    }
+    const footer = iframeDocument.getElementById('footer');
+    if (footer) {
+      footer.style.display = 'none';
+    }
+  };
 
-    // クローズボタンのイベントリスナー
-    closeBtn.onclick = function() {
+  closeBtn.onclick = function() {
+    modal.style.display = 'none';
+    calendar.refetchEvents();
+  };
+
+  window.onclick = function(event) {
+    if (event.target == modal) {
       modal.style.display = 'none';
       calendar.refetchEvents();
-    };
-
-    // モーダル外をクリックした場合にモーダルを閉じる
-    window.onclick = function(event) {
-      if (event.target == modal) {
-        modal.style.display = 'none';
-        calendar.refetchEvents();
-      }
-    };
+    }
+  };
   }
 
   function updateTicketDatesHandler(project_id, info) {
-      var ticket_id = info.event.id;
-      var newStartDate = info.event.start;
-      var newEndDate = info.event.end ? info.event.end : newStartDate; // 終日イベントの場合、終了日は省略されることがある
+  var ticket_id = info.event.id;
+  var newStartDate = info.event.start;
+  var newEndDate = info.event.end ? info.event.end : newStartDate;
 
-      updateTicketDates(project_id, ticket_id, newStartDate, newEndDate);
+  updateTicketDates(project_id, ticket_id, newStartDate, newEndDate);
   }
 
   function addDay(date, days) {
-    return new Date(date.getTime() + (1000 * 60 * 60 * 24) * days);
+  return new Date(date.getTime() + (1000 * 60 * 60 * 24) * days);
   }
 
   function updateTicketDates(project_id, ticket_id, start_date, end_date) {
-    fetch(`/projects/${project_id}/ticket_calendars/${ticket_id}/update_dates`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({ start_date: start_date.toLocaleDateString(), end_date: end_date.toLocaleDateString()  })
-    }).then(response => {
-      if (!response.ok) {
-        alert('Failed to update ticket dates.');
-      }
-    });
+  fetch(`/projects/${project_id}/ticket_calendars/${ticket_id}/update_dates`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    },
+    body: JSON.stringify({ start_date: start_date.toLocaleDateString(), end_date: end_date.toLocaleDateString() })
+  }).then(response => {
+    if (!response.ok) {
+      alert('Failed to update ticket dates.');
+    }
+  });
   }
 
   function updateTicketProgress(project_id, ticket_id, progress) {
-    fetch(`/projects/${project_id}/ticket_calendars/${ticket_id}/update_done_ratio`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      body: JSON.stringify({ done_ratio: progress })
-    }).then(response => {
-      if (!response.ok) {
-        alert('Failed to update ticket done ratio.');
-      }
-    });
+  fetch(`/projects/${project_id}/ticket_calendars/${ticket_id}/update_done_ratio`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    },
+    body: JSON.stringify({ done_ratio: progress })
+  }).then(response => {
+    if (!response.ok) {
+      alert('Failed to update ticket done ratio.');
+    }
+  });
   }
 </script>
