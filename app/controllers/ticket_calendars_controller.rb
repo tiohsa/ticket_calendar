@@ -8,7 +8,11 @@ class TicketCalendarsController < ApplicationController
   def index
     start_date = params[:start] ? params[:start] : Date.today.beginning_of_month - 7
     end_date = params[:end] ? params[:end] : Date.today.end_of_month + 7
-    @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?)", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
+    if params[:milestone_flag] == 'true'
+      @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?) AND due_date is null", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
+    else
+      @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?)", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
+    end
     respond_to do |format|
       format.html
       format.json { render json: @tickets.map { |ticket| ticket_to_calendar_json(ticket) } }

@@ -17,6 +17,8 @@
       <%= label_tag "status_ids_#{status.id}", status.name, class: "status_ids" %>
     </div>
   <% end %>
+  <%= check_box_tag 'milestone', 1, 0, id: 'milestone-checkbox', class: 'milestone-checkbox' %>
+  <%= label_tag 'milestone', 'Milestone' %>
 </div>
 <!-- モーダルダイアログのHTML -->
 <div id="ticketModal" class="modal" style="display:none;">
@@ -132,9 +134,9 @@
   var calendarEl = document.getElementById('calendar');
 
   function fetchEvents(fetchInfo, successCallback, failureCallback) {
-    var selectedStatusIds = Array.from(document.querySelectorAll('.status-checkbox:checked')).map(cb => `status_ids[]=${cb.value}`).join('&');
-
-    fetch(`/projects/${project_id}/ticket_calendars?start=${fetchInfo.start.toLocaleDateString()}&end=${fetchInfo.end.toLocaleDateString()}&${selectedStatusIds}`, {
+    var params = Array.from(document.querySelectorAll('.status-checkbox:checked')).map(cb => `status_ids[]=${cb.value}`).join('&');
+    params += '&milestone_flag=' + document.getElementById('milestone-checkbox').checked;
+    fetch(`/projects/${project_id}/ticket_calendars?start=${fetchInfo.start.toLocaleDateString()}&end=${fetchInfo.end.toLocaleDateString()}&${params}`, {
       headers: {
         'Accept': 'application/json'
       }
@@ -163,6 +165,10 @@
   });
 
   calendar.render();
+
+  document.getElementById("milestone-checkbox").addEventListener('change', function() {
+      calendar.refetchEvents();
+    });
 
   document.querySelectorAll('.status-checkbox').forEach(function(checkbox) {
     checkbox.addEventListener('change', function() {
@@ -285,5 +291,6 @@
       alert('Failed to update ticket done ratio.');
     }
   });
+
   }
 </script>
