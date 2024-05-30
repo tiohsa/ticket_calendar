@@ -9,13 +9,13 @@ class TicketCalendarsController < ApplicationController
     start_date = params[:start] ? params[:start] : Date.today.beginning_of_month - 7
     end_date = params[:end] ? params[:end] : Date.today.end_of_month + 7
     if params[:milestone_flag] == 'true'
-      @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?) AND due_date is null", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
+      tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?) AND due_date is null", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
     else
-      @tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?)", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
+      tickets = @project.issues.where("start_date >= ? AND start_date <= ? AND status_id in (?)", start_date, end_date, params[:status_ids]).order(start_date: :asc, id: :asc)
     end
     respond_to do |format|
       format.html
-      format.json { render json: @tickets.map { |ticket| ticket_to_calendar_json(ticket) } }
+      format.json { render json: tickets.map { |ticket| ticket_to_calendar_json(ticket) } }
     end
   end
 
@@ -24,46 +24,25 @@ class TicketCalendarsController < ApplicationController
   end
 
   def update_dates
-    @ticket = Issue.find(params[:id])
-    start_date = Date.parse(params[:start_date]) rescue nil
-    end_date = Date.parse(params[:end_date]) rescue nil
+    ticket = Issue.find(params[:id])
+    start_date = Date.parse(issue_params[:start_date]) rescue nil
+    due_date = Date.parse(issue_params[:due_date]) rescue nil
 
     if start_date.nil?
       render json: { status: 'error', message: 'Start date is not a valid date' }, status: :unprocessable_entity
       return
     end
 
-    if end_date.nil?
-      render json: { status: 'error', message: 'End date is not a valid date' }, status: :unprocessable_entity
-      return
-    end
-
     # fullcalendarから受ける日付は一日増やしたので戻す
-    @ticket.start_date = start_date
-    @ticket.due_date = end_date <= start_date ?  start_date  : end_date - 1
-
-    if @ticket.save
-      render json: { status: 'ok' }
-    else
-      render json: { status: 'error', message: @ticket.errors.full_messages.join(', ') }, status: :unprocessable_entity
-    end
-  end
-
-  def update_done_ratio
-    @ticket = Issue.find(params[:id])
-    done_ratio = Date.parse(params[:done_ratio]) rescue nil
-
-    if done_ratio.nil?
-      render json: { status: 'error', message: 'Done Ratio is not a valid date' }, status: :unprocessable_entity
-      return
+    ticket.start_date = start_date
+    if ticket.due_date
+      ticket.due_date = due_date <= start_date ?  start_date  : due_date - 1
     end
 
-    @ticket.done_ratio = done_ratio
-
-    if @ticket.save
+    if ticket.save
       render json: { status: 'ok' }
     else
-      render json: { status: 'error', message: @ticket.errors.full_messages.join(', ') }, status: :unprocessable_entity
+      render json: { status: 'error', message: ticket.errors.full_messages.join(', ') }, status: :unprocessable_entity
     end
   end
 
@@ -82,5 +61,10 @@ class TicketCalendarsController < ApplicationController
 
   def find_ticket
     @ticket = @project.issues.find(params[:id])
+  end
+
+
+  def issue_params
+    params.require(:issue).permit(:start_date, :due_date)
   end
 end

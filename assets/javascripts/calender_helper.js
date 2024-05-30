@@ -55,8 +55,10 @@ class CalendarHelper {
 
   updateTicketDatesHandler(project_id, info) {
     var ticket_id = info.event.id;
-    var newStartDate = info.event.start;
-    var newEndDate = info.event.end ? info.event.end : newStartDate;
+    var newStartDate = info.event.start.toLocaleDateString();
+    var newEndDate = info.event.end
+      ? info.event.end.toLocaleDateString()
+      : null;
     this.ticketCalenderHelper.updateTicketDates(
       project_id,
       ticket_id,

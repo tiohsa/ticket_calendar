@@ -48,8 +48,10 @@ class TicketCalenderHelper {
             .getAttribute("content"),
         },
         body: JSON.stringify({
-          start_date: start_date.toLocaleDateString(),
-          end_date: end_date.toLocaleDateString(),
+          issue: {
+            start_date: start_date,
+            due_date: end_date,
+          },
         }),
       },
     )
