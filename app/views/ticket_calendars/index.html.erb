@@ -24,35 +24,6 @@
   <%= check_box_tag 'milestone', 1, 0, id: 'milestone-checkbox', class: 'milestone-checkbox' %>
   <%= label_tag 'milestone', 'Milestone' %>
 </div>
-<!-- モーダルダイアログのHTML -->
-<div id="ticketModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <iframe id="ticketIframe" src="" frameborder="0" style="width: 100%; height: 80vh;"></iframe>
-  </div>
-</div>
-<!-- コンテキストメニューのHTML構造 -->
-<div id="contextMenu" class="context-menu" style="display: none; position: absolute; z-index: 1000;">
-  <ul class="menu-list">
-    <li><a href="#" id="edit-ticket">編集</a></li>
-    <li><a href="#" id="edit-status">Close</a></li>
-    <li id="progress-menu-item">
-      <select id="view-selector">
-        <option value="multiMonthYear">Multi Month Year</option>
-        <option value="timeGridWeek">Time Grid Week</option>
-        <option value="listDay">List Day</option>
-        <option value="listWeek">List Week</option>
-        <option value="listMonth">List Month</option>
-        <option value="listYear">List Year</option>
-        <option value="dayGridMonth">Day Grid Month</option>
-        <option value="dayGridWeek">Day Grid Week</option>
-        <option value="dayGridDay">Day Grid Day</option>
-      </select>
-    </li>
-    <li><a href="#" id="priority">優先度</a></li>
-    <li><a href="#" id="category">カテゴリ</a></li>
-  </ul>
-</div>
 <div id='calendar'></div>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
