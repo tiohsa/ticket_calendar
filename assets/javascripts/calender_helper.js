@@ -27,6 +27,11 @@ class CalendarHelper {
       eventResize: (info) => {
         this.updateTicketDatesHandler(this.project_id, info);
       },
+      eventDidMount: (info) => {
+        if (info.event.extendedProps.milestone) {
+          info.el.style.backgroundColor = "#7e4efa"; // マイルストーンの場合は赤色に変更
+        }
+      },
     });
 
     this.calendar.render();
