@@ -5,7 +5,7 @@ class CalendarHelper {
     this.milestoneCheckbox = document.getElementById(options.milestoneCheckbox);
     this.statusCheckboxes = document.querySelectorAll(options.statusCheckboxes);
     this.calendarEl = document.getElementById(options.calendar);
-    this.selectView = document.getElementById("view-selector");
+    this.selectView = document.getElementById(options.viewChange);
 
     this.initial();
     this.attachSelectViewEvent();
