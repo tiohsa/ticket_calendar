@@ -75,7 +75,8 @@ class TicketCalendarsController < ApplicationController
       title: ticket.subject,
       start: ticket.start_date,
       end: ticket.due_date ? ticket.due_date + 1 : ticket.due_date, # fullcalendarでは2024/01/01 00:00から2024/01/02 00:00だと１日分を表すため+1日する
-      url: issue_path(ticket)
+      url: issue_path(ticket),
+      miletone: ticket.due_date == nil
     }
   end
 

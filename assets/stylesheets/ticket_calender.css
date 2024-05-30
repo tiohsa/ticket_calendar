@@ -1,0 +1,9 @@
+ /* 土曜日の色を青に設定 */
+ .fc-day-sat {
+    background-color: #CCF;
+}
+
+/* 日曜日の色を赤に設定 */
+.fc-day-sun {
+    background-color: #FCC;
+}
