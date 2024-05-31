@@ -1,0 +1,48 @@
+# Ticket Calendar Plugin for Redmine
+
+## Overview
+The Ticket Calendar plugin for Redmine displays tickets in a calendar view with drag-and-drop functionality. This plugin utilizes FullCalendar to provide a user-friendly interface for managing tickets within projects.
+
+## Features
+- Display Redmine tickets in a calendar view.
+- Drag-and-drop functionality to easily update ticket dates.
+- Seamlessly integrates with Redmine's project menu.
+
+## Installation
+1. Navigate to your Redmine plugins directory:
+    ```sh
+    cd /path/to/redmine/plugins
+    ```
+
+2. Clone the repository:
+    ```sh
+    git clone https://github.com/tiohsa/ticket_calendar.git
+    ```
+
+3. Install dependencies:
+    ```sh
+    bundle install
+    ```
+
+4. Migrate the database:
+    ```sh
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production
+    ```
+
+5. Restart Redmine:
+    - If you are using Passenger, restart Apache or Nginx.
+    - If you are using WEBrick, stop and start the server.
+
+## Usage
+1. Navigate to your project.
+2. Click on the "Calendar" menu item to view and manage tickets in the calendar view.
+
+## Permissions
+Ensure that the appropriate permissions are set for the roles that should have access to the Ticket Calendar:
+- `view_ticket_calendar` permission allows users to view the calendar and update ticket dates.
+
+## Configuration
+No additional configuration is required after installation. The plugin will be available in the project menu under "Calendar".
+
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
